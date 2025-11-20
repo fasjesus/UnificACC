@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Documentos de Horas Complementares</title>
+    <style>
+        /* --- ESTILOS GERAIS --- */
+        body { 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; 
+            background-color: #314ca5; 
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+            min-height: 100vh; 
+        }
+
+        /* --- CABEÇALHO --- */
+        .header-wrapper {
+            width: 100%;
+            background-color: #fff; 
+            padding: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            max-width: 1100px; 
+            margin: 0 auto;
+            padding: 0 20px; 
+            display: flex; /* Flexbox para alinhar itens lado a lado */
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-titles { 
+            text-align: center; 
+            flex-grow: 1; /* Ocupa o espaço central */
+            padding: 0 20px;
+        }
+
+        .logo-uesc { height: 80px; width: auto; } 
+        .logo-colcic { height: 65px; width: auto; }
+
+        .header-titles h2 { 
+            color: #444; 
+            font-weight: 600; 
+            margin: 4px 0;
+            font-size: 1.1em; 
+            line-height: 1.3;
+        }
+
+        /* --- TÍTULO PRINCIPAL --- */
+        .main-title-wrapper {
+            max-width: 1100px;
+            width: 90%;
+            text-align: center;
+            margin-top: 30px; 
+            margin-bottom: 20px; 
+        }
+        .main-title {
+            font-family: 'Montserrat', sans-serif;
+            color: #fff;
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* --- CONTAINER DO FORMULÁRIO --- */
+        .container { 
+            max-width: 1100px; 
+            background: #fff; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
+            width: 90%; 
+            box-sizing: border-box;
+            margin-bottom: 50px; 
+        }
+
+        /* --- FORMULÁRIO (GRID) --- */
+        .form-grid { 
+            display: grid; 
+            grid-template-columns: 3fr 2fr 3fr 2fr; 
+            gap: 20px; 
+            margin-bottom: 20px; 
+        }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #333; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        .form-group input[readonly] { background-color: #f8f9fa; cursor: default; color: #666; }
+        .error-message { color: #dc3545; font-size: 0.85em; display: none; margin-top: 5px; }
+
+        /* --- TABELA (Estilo Desktop Padrão) --- */
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 25px; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #ddd; 
+            table-layout: fixed; /* Ajuda a controlar larguras */
+            background: #f4f7f6;
+        }
+        
+        thead { display: table-header-group; }
+        tr { display: table-row; background: #f4f7f6; box-shadow: none; border-radius: 0; margin: 0; }
+        
+        th, td { 
+            padding: 12px 15px; 
+            text-align: left; 
+            vertical-align: top; /* Alinha texto ao topo */
+            border-bottom: 1px solid #eee; 
+            border-right: 1px solid #eee;
+            display: table-cell; /* Garante comportamento de tabela no desktop */
+        }
+        
+        th { 
+            background-color: #314ca5; 
+            color: #fff; 
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            border-right: 1px solid #3a56b5;
+        }
+        
+        td input[type="number"] {
+            width: 100%; padding: 8px; border: 1px solid #ccc;
+            border-radius: 5px; box-sizing: border-box; font-size: 14px;
+        }
+
+        /* --- INPUTS DE ARQUIVO (Desktop) --- */
+        .file-input-wrapper { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 5px; 
+            flex-wrap: nowrap; /* Não quebra linha no desktop */
+            width: auto;
+        }
+        
+        .file-button { 
+            background-color: #f0f2f5; 
+            border: 1px solid #ced4da; 
+            border-radius: 4px; 
+            padding: 6px 12px; 
+            cursor: pointer; 
+            font-size: 0.85em; 
+            white-space: nowrap; 
+            color: #495057; 
+            font-weight: 500; 
+            display: inline-block;
+        }
+        
+        .file-button:hover { background-color: #e2e6ea; border-color: #adb5bd; }
+        .file-input { display: none; }
+        .file-name { 
+            margin-left: 8px; 
+            font-size: 0.85em; 
+            color: #666; 
+            white-space: nowrap; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            max-width: 180px; 
+            display: inline-block;
+        }
+        
+        .delete-file { display: none; font-weight: bold; color: #dc3545; cursor: pointer; margin-left: 8px; font-size: 1.2em; }
+        
+        .add-more { 
+            font-size: 0.8em; 
+            text-decoration: none; 
+            color: #5652BF; 
+            font-weight: 600;
+            cursor: pointer; 
+            display: inline-block; 
+            margin-top: 2px;
+        }
+        .add-more:hover { text-decoration: underline; }
+
+        /* --- BOTÃO PRINCIPAL --- */
+        .button-container { text-align: center; margin-top: 40px; }
+        button { 
+            padding: 16px 40px; 
+            background-color: #5652BF; 
+            color: white; 
+            border: none; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold; 
+            box-shadow: 0 4px 10px rgba(86, 82, 191, 0.3);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        button:hover { background-color: #4d4ab7; transform: translateY(-2px); }
+
+        /* ========================================= */
+        /* === RESPONSIVIDADE (MOBILE CARD VIEW) === */
+        /* ========================================= */
+        @media (max-width: 800px) {
+            /* Header Mobile */
+            .header-content {
+                flex-wrap: wrap; /* Permite quebrar linha */
+                padding: 10px 15px;
+            }
+            .header-titles {
+                order: 3; 
+                width: 100%;
+                margin-top: 10px;
+                padding: 0;
+            }
+
+            .header-titles {
+                display: none; 
+            }
+            .logo-uesc { height: 50px; } 
+            .logo-colcic { height: 35px; }
+            .header-titles h2 { font-size: 0.75em; margin: 2px 0; }
+            
+            .main-title { font-size: 1.2em; }
+            .container { width: 95%; padding: 15px; }
+            
+            .form-grid { grid-template-columns: 1fr; gap: 15px; }
+
+            /* Transformação da Tabela em Cards */
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            
+            tr { 
+                border: 1px solid #e0e0e0; 
+                border-radius: 10px; 
+                margin-bottom: 20px; 
+                background: #fff;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            }
+
+            /* Header do Card (Nome da Atividade) */
+            td[data-label="Atividade:"] {
+                background-color: #f8f9fa;
+                border-bottom: 2px solid #eee;
+                border-right: none;
+                font-weight: 700;
+                color: #314ca5;
+                text-align: left;
+                padding: 15px;
+                font-size: 1em;
+                display: block;
+            }
+            
+            /* Linhas internas do Card */
+            td {
+                display: flex;
+                justify-content: space-between; 
+                align-items: center;
+                text-align: right;
+                padding: 12px 15px;
+                border-bottom: 1px solid #eee;
+                border-right: none;
+                min-height: auto;
+            }
+
+            td:last-child { border-bottom: none; display: block; text-align: left; }
+
+            /* Labels responsivos (Pseudo-elementos) */
+            td:not([data-label="Atividade:"]):before { 
+                content: attr(data-label); 
+                font-weight: 600;
+                color: #555;
+                text-align: left;
+                margin-right: 15px;
+                font-size: 0.9em;
+                flex: 1; 
+            }
+
+            /* Input Mobile */
+            td input[type="number"] { 
+                width: 100px; 
+                padding: 8px;
+                text-align: center;
+            }
+
+            /* Arquivo Mobile */
+            .input-container { width: 100%; margin-top: 5px; }
+            .file-input-wrapper { 
+                justify-content: space-between; 
+                width: 100%; 
+                flex-wrap: wrap; /* No mobile pode quebrar linha se nome for grande */
+            }
+            .file-button { flex-grow: 1; text-align: center; padding: 10px; width: 100%; box-sizing: border-box; }
+            .file-name { margin-left: 0; margin-top: 5px; max-width: 100%; display: block; text-align: center; }
+            .delete-file { margin-left: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-wrapper">
+        <div class="header-content">
+            <div class="logo-left"><img src="/static/images/logo_uesc.png" alt="Logo da UESC" class="logo-uesc"></div>
+            
+            <div class="header-titles">
+                <h2>UNIVERSIDADE ESTADUAL DE SANTA CRUZ - UESC</h2>
+                <h2>COLEGIADO DE CIÊNCIA DA COMPUTAÇÃO - COLCIC</h2>
+            </div>
+
+            <div class="logo-right"><img src="/static/images/logo_computacao.png" alt="Logo de Computação" class="logo-colcic"></div>
+        </div>
+    </div>
+
+    <div class="main-title-wrapper">
+        <h1 id="titulo-barema" class="main-title">Barema de Atividades Complementares</h1>
+    </div>
+
+    <div class="container">
+        <form action="/" method="post" enctype="multipart/form-data" id="baremaForm">
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="nome">Nome do Discente:</label>
+                    <input type="text" id="nome" name="nome" placeholder="Digite seu nome completo" required>
+                </div>
+                <div class="form-group">
+                    <label for="matricula">Matrícula:</label>
+                    <input 
+                        type="text" 
+                        id="matriculaInput" 
+                        name="matricula" 
+                        placeholder="Ex: 202310..." 
+                        required 
+                        pattern="\d{4}[12]\d{4}" 
+                        maxlength="9" 
+                        title="A matrícula deve conter 9 dígitos e o 5º dígito deve ser 1 ou 2."
+                    >
+                    <span id="matriculaError" class="error-message"></span>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" placeholder="seu.email@exemplo.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="data_verificacao">Data de Verificação:</label>
+                    <input type="text" id="data_verificacao" name="data_verificacao" value="{{ data_hoje }}" readonly>
+                </div>
+            </div>
+
+            <input type="hidden" id="baremaTipoInput" name="barema_tipo" value="antigo"> 
+
+            <div id="tabela-atividades"> 
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Atividade</th>
+                            <th style="width: 15%;">C.H. Máxima</th>
+                            <th style="width: 15%;">C.H. Cumprida</th>
+                            <th style="width: 35%;">Anexar Comprovante(s)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="atividadesTbody"> 
+                        {% for atividade in atividades %}
+                        <tr>
+                            <td data-label="Atividade:">{{ atividade.id }}. {{ atividade.atividade }}</td>
+                            <td data-label="C.H. Máxima:">{{ atividade.carga_maxima }}</td>
+                            <td data-label="C.H. Cumprida:">
+                                <input 
+                                    type="number" 
+                                    name="horas_{{ atividade.id }}" 
+                                    placeholder=" ex: 30" 
+                                    min="0" 
+                                    {% if atividade.max_horas_num %}
+                                        max="{{ atividade.max_horas_num }}"
+                                        title="Máximo permitido: {{ atividade.max_horas_num }} horas."
+                                    {% else %}
+                                        title="Digite a quantidade de horas cumpridas."
+                                    {% endif %}
+                                    step="1"
+                                >
+                            </td>
+                            <td data-label="Comprovante(s):">
+                                <div class="input-container" id="input-container-{{ atividade.id }}">
+                                    <div class="file-input-wrapper">
+                                        <label class="file-button">
+                                            <span>Escolher Arquivo</span>
+                                            <input type="file" name="certificado_{{ atividade.id }}" accept=".pdf" class="file-input"> 
+                                        </label>
+                                        <span class="file-name">Nenhum arquivo</span>
+                                        <span class="delete-file" title="Remover">&times;</span>
+                                    </div>
+                                </div>
+                                <a href="#" class="add-more" data-target-id="{{ atividade.id }}">+ Adicionar outro</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="button-container">
+                    <button type="submit">Gerar PDF Unificado</button>
+                </div>
+            </div>
+            
+        </form>
+    </div>
+
+    <script>
+        const matriculaInput = document.getElementById('matriculaInput');
+        const atividadesTbody = document.getElementById('atividadesTbody');
+        const tabelaDiv = document.getElementById('tabela-atividades');
+        const baremaTipoInput = document.getElementById('baremaTipoInput');
+        const tituloBarema = document.getElementById('titulo-barema');
+        const matriculaError = document.getElementById('matriculaError'); 
+
+        function createNewFileInputHTML(inputName) { 
+            return `
+                <div class="file-input-wrapper">
+                    <label class="file-button">
+                        <span>Escolher Arquivo</span>
+                        <input type="file" name="${inputName}" accept=".pdf" class="file-input"> 
+                    </label>
+                    <span class="file-name">Nenhum arquivo</span>
+                    <span class="delete-file" title="Remover">&times;</span>
+                </div>
+            `;
+        }
+
+        function buildTableRows(activities) {
+            atividadesTbody.innerHTML = ''; 
+            if (!activities || activities.length === 0) return;
+
+            activities.forEach(atividade => {
+                const row = atividadesTbody.insertRow();
+                let maxAttr = '';
+                let titleAttr = 'Digite a quantidade de horas cumpridas.';
+                
+                if (atividade.max_horas_num != null) { 
+                    maxAttr = `max="${atividade.max_horas_num}"`;
+                    titleAttr = `Máximo permitido: ${atividade.max_horas_num} horas.`;
+                }
+                const horasInputHTML = `
+                    <input type="number" name="horas_${atividade.id}" placeholder="0" min="0" ${maxAttr} title="${titleAttr}" step="1">
+                `;
+                
+                row.innerHTML = `
+                    <td data-label="Atividade:">${atividade.id}. ${atividade.atividade}</td>
+                    <td data-label="C.H. Máxima:">${atividade.carga_maxima}</td>
+                    <td data-label="C.H. Cumprida:">${horasInputHTML}</td>
+                    <td data-label="Comprovante(s):">
+                        <div class="input-container" id="input-container-${atividade.id}">
+                            ${createNewFileInputHTML('certificado_' + atividade.id)}
+                        </div>
+                        <a href="#" class="add-more" data-target-id="${atividade.id}">+ Adicionar outro</a>
+                    </td>
+                `;
+            });
+        }
+
+        async function loadBaremaData(matricula) {
+            const matriculaRegex = /^\d{4}[12]\d{4}$/;
+            let tipoBarema = 'antigo'; 
+
+            if (!matricula || !matriculaRegex.test(matricula)) {
+                if (matricula.length > 0) {
+                    matriculaError.textContent = "Formato inválido (ex: 202310001).";
+                    matriculaError.style.display = 'block';
+                } else {
+                    matriculaError.style.display = 'none';
+                }
+            } else {
+                matriculaError.style.display = 'none';
+                const anoIngresso = parseInt(matricula.substring(0, 4));
+                const semestreIngresso = parseInt(matricula.substring(4, 5));
+                if (anoIngresso > 2023 || (anoIngresso === 2023 && semestreIngresso >= 1)) {
+                    tipoBarema = 'novo';
+                }
+            }
+
+            if (baremaTipoInput.value !== tipoBarema) {
+                baremaTipoInput.value = tipoBarema;
+                if (tipoBarema === 'novo') {
+                    tituloBarema.textContent = "Barema de Atividades (Ingresso pós 2023.1)";
+                } else {
+                    tituloBarema.textContent = "Barema de Atividades Complementares";
+                }
+
+                try {
+                    const response = await fetch(`/get_barema_data/${tipoBarema}`);
+                    if (!response.ok) throw new Error('Erro ao buscar dados');
+                    const activities = await response.json();
+                    buildTableRows(activities);
+                } catch (error) {
+                    console.error("Erro:", error);
+                }
+            }
+        }
+
+        matriculaInput.addEventListener('blur', (event) => {
+            loadBaremaData(event.target.value);
+        });
+
+        document.querySelector('.container').addEventListener('click', function(event) {
+            if (event.target.classList.contains('add-more')) { 
+                event.preventDefault(); 
+                const targetId = event.target.dataset.targetId;
+                const container = document.getElementById('input-container-' + targetId);
+                const inputName = 'certificado_' + targetId;
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = createNewFileInputHTML(inputName).trim();
+                container.appendChild(tempDiv.firstChild);
+            } else if (event.target.classList.contains('delete-file')) { 
+                const wrapper = event.target.closest('.file-input-wrapper');
+                const container = wrapper.closest('.input-container');
+                if (container.querySelectorAll('.file-input-wrapper').length > 1) {
+                    wrapper.remove();
+                } else {
+                    const input = wrapper.querySelector('.file-input');
+                    input.value = null; 
+                    wrapper.querySelector('.file-button span').textContent = 'Escolher Arquivo';
+                    wrapper.querySelector('.file-name').textContent = 'Nenhum arquivo';
+                    event.target.style.display = 'none';
+                    wrapper.querySelector('.file-button').style.backgroundColor = '#f0f2f5'; 
+                    wrapper.querySelector('.file-button').style.borderColor = '#ced4da';
+                }
+            }
+        });
+        
+        document.querySelector('.container').addEventListener('change', function(event) {
+            if (event.target.classList.contains('file-input')) { 
+                const input = event.target;
+                const wrapper = input.closest('.file-input-wrapper');
+                const buttonSpan = wrapper.querySelector('.file-button span');
+                const fileNameSpan = wrapper.querySelector('.file-name');
+                const deleteButton = wrapper.querySelector('.delete-file');
+                const fileButton = wrapper.querySelector('.file-button');
+
+                if (input.files.length > 0) {
+                    fileNameSpan.textContent = input.files[0].name;
+                    buttonSpan.textContent = 'Alterar';
+                    deleteButton.style.display = 'inline'; 
+                    fileButton.style.backgroundColor = '#e2e6ea';
+                    fileButton.style.borderColor = '#adb5bd';
+                } else {
+                    fileNameSpan.textContent = 'Nenhum arquivo';
+                    buttonSpan.textContent = 'Escolher Arquivo';
+                    deleteButton.style.display = 'none'; 
+                    fileButton.style.backgroundColor = '#f0f2f5';
+                    fileButton.style.borderColor = '#ced4da';
+                }
+            }
+        });
+
+        document.getElementById('baremaForm').addEventListener('submit', function(event) {
+            let allValid = true;
+            let errorMessages = [];
+            const rows = document.getElementById('atividadesTbody').querySelectorAll('tr');
+
+            rows.forEach(function(row) {
+                const horasInput = row.querySelector('input[type="number"]');
+                const fileInputs = row.querySelectorAll('input[type="file"]');
+                const fileButtons = row.querySelectorAll('.file-button'); 
+                
+                if (horasInput) horasInput.style.border = "1px solid #ccc";
+                fileButtons.forEach(btn => btn.style.borderColor = "#ced4da");
+
+                let hasFile = false;
+                fileInputs.forEach(function(input) {
+                    if (input.files.length > 0 && input.value) hasFile = true;
+                });
+
+                const hasHours = horasInput && horasInput.value && parseInt(horasInput.value) > 0;
+                const activityID = row.querySelector('td:first-child').textContent.split('.')[0];
+
+                if (hasFile && !hasHours) {
+                    allValid = false;
+                    errorMessages.push(`- Atividade ${activityID}: Anexou certificado mas não pôs horas.`);
+                    if (horasInput) horasInput.style.border = "2px solid #dc3545"; 
+                }
+                if (hasHours && !hasFile) {
+                    allValid = false;
+                    errorMessages.push(`- Atividade ${activityID}: Pôs horas mas não anexou certificado.`);
+                    fileButtons.forEach(btn => btn.style.borderColor = "#dc3545"); 
+                }
+            });
+
+            if (!allValid) {
+                event.preventDefault(); 
+                alert("Atenção:\n\n" + errorMessages.join("\n"));
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dataVerificacaoInput = document.getElementById('data_verificacao');
+            if (!dataVerificacaoInput.value) {
+                const today = new Date();
+                const dd = String(today.getDate()).padStart(2, '0');
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const yyyy = today.getFullYear();
+                dataVerificacaoInput.value = `${dd}/${mm}/${yyyy}`;
+            }
+        });
+    </script>
+</body>
+</html>
