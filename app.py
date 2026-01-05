@@ -166,6 +166,55 @@ def gerar_barema_pdf(dados_barema):
     packet.seek(0)
     return packet
 
+# --- NOVA FUNÇÃO PARA NUMERAR PÁGINAS ---
+def adicionar_numeracao_paginas(pdf_entrada_stream):
+    """
+    Recebe um stream (BytesIO) com o PDF completo, conta as páginas,
+    cria uma sobreposição com a numeração e retorna um novo stream.
+    """
+    # Leitura
+    leitor = PdfReader(pdf_entrada_stream)
+    numero_paginas = len(leitor.pages)
+    
+    # novo PDF
+    escritor = PdfWriter()
+
+    for i, pagina in enumerate(leitor.pages):
+        # Cria um PDF temporário em memória só para o número desta página
+        packet_numero = BytesIO()
+        
+        # Pega as dimensões da página atual 
+        largura_pagina = float(pagina.mediabox.width)
+        altura_pagina = float(pagina.mediabox.height)
+        
+        # Cria o canvas do tamanho exato da página
+        c = canvas.Canvas(packet_numero, pagesize=(largura_pagina, altura_pagina))
+        
+        # fonte e texto
+        c.setFont("Helvetica", 9)
+        texto_pag = f"Página {i+1} de {numero_paginas}"
+        
+        # Desenha no canto inferior direito (margem de 20 pontos)
+        # drawString(x, y, text) -> x conta da esquerda, y conta de baixo
+        # drawRightString alinha o texto à direita da coordenada X passada
+        c.drawRightString(largura_pagina - 20, 20, texto_pag)
+        
+        c.save()
+        packet_numero.seek(0)
+        
+        # Mescla o PDF do número com a página original
+        leitor_numero = PdfReader(packet_numero)
+        pagina.merge_page(leitor_numero.pages[0])
+        
+        # Adiciona a página mesclada ao resultado final
+        escritor.add_page(pagina)
+
+    # Gera o stream final
+    pdf_saida_stream = BytesIO()
+    escritor.write(pdf_saida_stream)
+    pdf_saida_stream.seek(0)
+    return pdf_saida_stream
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -226,6 +275,8 @@ def index():
             })
 
         barema_pdf_gerado = gerar_barema_pdf(dados_barema_pdf)
+        
+        # Junta tudo (Barema + Certificados) em um merger
         merger = PdfWriter()
         merger.append(barema_pdf_gerado)
         for cert_group in certificados_enviados:
@@ -233,11 +284,16 @@ def index():
                 cert_info['file'].seek(0)
                 merger.append(cert_info['file'])
 
+        # Salva o PDF mesclado (sem números ainda) num buffer temporário
+        temp_buffer = BytesIO()
+        merger.write(temp_buffer)
+        temp_buffer.seek(0)
+
+        # Chama a função para adicionar a numeração
+        pdf_final_numerado = adicionar_numeracao_paginas(temp_buffer)
+
         output_filename = f"documento_final_{uuid.uuid4().hex}.pdf"
-        output_stream = BytesIO()
-        merger.write(output_stream)
-        output_stream.seek(0)
-        return send_file(output_stream, as_attachment=True, download_name=output_filename)
+        return send_file(pdf_final_numerado, as_attachment=True, download_name=output_filename)
 
     # --- CARREGA DADOS INICIAIS ---
     atividades = ler_barema_csv(BAREMA_ANTIGO_CSV)
